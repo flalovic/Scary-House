@@ -4,6 +4,7 @@
 
 #include "../include/MainController.hpp"
 
+#include <GUIControler.hpp>
 #include <engine/graphics/GraphicsController.hpp>
 #include <engine/graphics/OpenGL.hpp>
 #include <engine/platform/PlatformController.hpp>
@@ -27,24 +28,27 @@ bool MainController::loop() {
 }
 
 void MainController::update() {
-    auto platform = engine::core::Controller::get<engine::platform::PlatformController>();
-    auto camera = engine::core::Controller::get<engine::graphics::GraphicsController>()->camera();
-    float dt = platform->dt();
-    if (platform->key(engine::platform::KEY_W).state() == engine::platform::Key::State::Pressed) {
-        camera->move_camera(engine::graphics::Camera::Movement::FORWARD, dt);
+    auto gui_controller = engine::core::Controller::get<app::GUIController>();;
+    if (!gui_controller->is_enabled()) {
+        auto platform = engine::core::Controller::get<engine::platform::PlatformController>();
+        auto camera = engine::core::Controller::get<engine::graphics::GraphicsController>()->camera();
+        float dt = platform->dt();
+        if (platform->key(engine::platform::KEY_W).state() == engine::platform::Key::State::Pressed) {
+            camera->move_camera(engine::graphics::Camera::Movement::FORWARD, dt);
+        }
+        if (platform->key(engine::platform::KEY_S).state() == engine::platform::Key::State::Pressed) {
+            camera->move_camera(engine::graphics::Camera::Movement::BACKWARD, dt);
+        }
+        if (platform->key(engine::platform::KEY_A).state() == engine::platform::Key::State::Pressed) {
+            camera->move_camera(engine::graphics::Camera::Movement::LEFT, dt);
+        }
+        if (platform->key(engine::platform::KEY_D).state() == engine::platform::Key::State::Pressed) {
+            camera->move_camera(engine::graphics::Camera::Movement::RIGHT, dt);
+        }
+        auto mouse = platform->mouse();
+        camera->rotate_camera(mouse.dx, mouse.dy);
+        camera->zoom(mouse.scroll);
     }
-    if (platform->key(engine::platform::KEY_S).state() == engine::platform::Key::State::Pressed) {
-        camera->move_camera(engine::graphics::Camera::Movement::BACKWARD, dt);
-    }
-    if (platform->key(engine::platform::KEY_A).state() == engine::platform::Key::State::Pressed) {
-        camera->move_camera(engine::graphics::Camera::Movement::LEFT, dt);
-    }
-    if (platform->key(engine::platform::KEY_D).state() == engine::platform::Key::State::Pressed) {
-        camera->move_camera(engine::graphics::Camera::Movement::RIGHT, dt);
-    }
-    auto mouse = platform->mouse();
-    camera->rotate_camera(mouse.dx, mouse.dy);
-    camera->zoom(mouse.scroll);
 }
 
 void MainController::begin_draw() {
