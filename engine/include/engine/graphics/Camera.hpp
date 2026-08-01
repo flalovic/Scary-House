@@ -88,6 +88,8 @@ public:
     explicit Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),
                     float yaw = YAW, float pitch = PITCH);
 
+    void set_pose(const glm::vec3& position, float yaw, float pitch);
+
     /**
      * @returns  returns the view matrix calculated using Euler Angles and the LookAt Matrix.
      */
