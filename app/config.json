@@ -4,6 +4,14 @@
       "scary": {
         "path": "scary_interior/scene.gltf",
         "flip_uvs": true
+      },
+      "pillar": {
+        "path": "pillar/scene.gltf",
+        "flip_uvs": true
+      },
+      "magma_ball": {
+        "path": "magma_ball/scene.gltf",
+        "flip_uvs": true
       }
     }
   },

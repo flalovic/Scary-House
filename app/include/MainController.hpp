@@ -13,6 +13,8 @@ class MainController : public engine::core::Controller{
 
     void begin_draw() override;
     void draw_space();
+    void draw_pillar();
+    void draw_lightbox();
     void draw() override;
     void end_draw() override;
 };

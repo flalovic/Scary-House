@@ -58,6 +58,8 @@ void MainController::begin_draw() {
 void MainController::draw() {
     // draw
     draw_space();
+    draw_pillar();
+    draw_lightbox();
 }
 
 void MainController::draw_space() {
@@ -90,6 +92,61 @@ void MainController::draw_space() {
     shader->set_vec3("spotLightDiffuse", gui_controller->spotlight_diffuse_color());
 
     house->draw(shader);
+}
+
+void MainController::draw_pillar() {
+    auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
+    auto resources = engine::core::Controller::get<engine::resources::ResourcesController>();
+    auto gui_controller = engine::core::Controller::get<app::GUIController>();
+
+    auto shader = resources->shader("advanced");
+    auto pillar = resources->model("pillar");
+
+    shader->use();
+
+    shader->set_mat4("projection", graphics->projection_matrix());
+    shader->set_mat4("view", graphics->camera()->view_matrix());
+
+    glm::mat4 model(1.0f);
+    model = glm::translate(model, glm::vec3(1.0f, 0.05f, 1.2f));
+    model = glm::scale(model, glm::vec3(0.0002f));
+    shader->set_mat4("model", model);
+
+
+    shader->set_vec3("camPos", graphics->camera()->Position);
+    shader->set_vec3("spotLightPos", graphics->camera()->Position);
+    shader->set_vec3("spotLightDir", graphics->camera()->Front);
+    shader->set_float("spotInnerCutOff", glm::cos(glm::radians(12.5f)));
+    shader->set_float("spotOuterCutOff", glm::cos(glm::radians(17.5f)));
+    shader->set_bool("spotLightEnabled", gui_controller->is_spotlight_enabled());
+    shader->set_vec3("spotLightDiffuse", gui_controller->spotlight_diffuse_color());
+
+    pillar->draw(shader);
+}
+
+void MainController::draw_lightbox() {
+    auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
+    auto resources = engine::core::Controller::get<engine::resources::ResourcesController>();
+
+    auto shader = resources->shader("basic");
+    auto light_box = resources->model("magma_ball");
+
+    shader->use();
+
+    shader->set_mat4("projection", graphics->projection_matrix());
+    shader->set_mat4("view", graphics->camera()->view_matrix());
+
+    // glm::vec3 pillar_top = glm::vec3(0.998914f, 1.407529f, 1.201679f);
+
+    glm::mat4 model = glm::mat4(1.0f);
+
+    model = glm::translate(model, glm::vec3(0.9f, 1.407529f, 1.93f));
+    model = glm::scale(model, glm::vec3(0.01f));
+
+    shader->set_mat4("model", model);
+
+    shader->set_vec3("lightColor", glm::vec3(1.0f, 0.9f, 0.7f));
+    light_box->draw(shader);
 }
 
 void MainController::end_draw() {

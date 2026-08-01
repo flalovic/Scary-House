@@ -16,7 +16,7 @@ uniform mat4 projection;
 void main()
 {
     FragPos = vec3(model * vec4(aPos, 1.0));
-    Normal = mat3(transpose(inverse(model))) * aNormal;;
+    Normal = mat3(transpose(inverse(model))) * aNormal;
     TexCoords = aTexCoords;
     gl_Position = projection * view * vec4(FragPos, 1.0);
 }
@@ -35,10 +35,8 @@ uniform vec3 camPos;
 
 uniform vec3 spotLightPos;
 uniform vec3 spotLightDir;
-
 uniform float spotInnerCutOff;
 uniform float spotOuterCutOff;
-
 uniform bool spotLightEnabled;
 uniform vec3 spotLightDiffuse;
 
@@ -46,37 +44,53 @@ out vec4 FragColor;
 
 void main()
 {
-    vec3 ambientColor = vec3(0.2);
-    vec3 specularColor = vec3(0.6);
-
+    vec3 normal = normalize(Normal);
+    vec3 viewDir = normalize(camPos - FragPos);
     vec3 textureColor = texture(texture_diffuse1, TexCoords).rgb;
 
+    vec3 ambientColor = vec3(0.2);
     vec3 ambient = ambientColor * textureColor;
 
-    vec3 diffuse = vec3(0.0);
-    vec3 specular = vec3(0.0);
+    vec3 specularColor = vec3(0.6);
+
+    vec3 pointLightPos = vec3(0.947171, 1.595212, 1.226468);
+    vec3 pointLightColor = vec3(0.9608, 0.5882, 0.2353);
+
+    vec3 pointLightDir = normalize(pointLightPos - FragPos);
+    float distance = length(pointLightPos - FragPos);
+
+    float constant = 1.0;
+    float linear = 0.09;
+    float quadratic = 0.032;
+    float attenuation = 1.0 / (constant + linear * distance + quadratic * (distance * distance));
+
+    float pointDiffuseFactor = max(dot(normal, pointLightDir), 0.0);
+    vec3 pointReflectDir = reflect(-pointLightDir, normal);
+    float pointSpecularFactor = pow(max(dot(viewDir, pointReflectDir), 0.0), 32.0);
+
+    vec3 pointDiffuse = pointDiffuseFactor * pointLightColor * textureColor * attenuation;
+    vec3 pointSpecular = pointSpecularFactor * specularColor * attenuation;
+
+    vec3 spotDiffuse = vec3(0.0);
+    vec3 spotSpecular = vec3(0.0);
 
     if (spotLightEnabled)
     {
-        vec3 normal = normalize(Normal);
-        vec3 lightDir = normalize(spotLightPos - FragPos);
-        vec3 viewDir = normalize(camPos - FragPos);
-
-        float theta = dot(lightDir, normalize(-spotLightDir));
+        vec3 spotLightDirNorm = normalize(spotLightPos - FragPos);
+        float theta = dot(spotLightDirNorm, normalize(-spotLightDir));
 
         float epsilon = spotInnerCutOff - spotOuterCutOff;
         float spotIntensity = clamp((theta - spotOuterCutOff) / epsilon, 0.0, 1.0);
 
-        float diffuseFactor = max(dot(normal, lightDir), 0.0);
+        float spotDiffuseFactor = max(dot(normal, spotLightDirNorm), 0.0);
+        vec3 spotReflectDir = reflect(-spotLightDirNorm, normal);
+        float spotSpecularFactor = pow(max(dot(viewDir, spotReflectDir), 0.0), 32.0);
 
-        vec3 reflectedDir = reflect(-lightDir, normal);
-        float specularFactor = pow(max(dot(viewDir, reflectedDir), 0.0), 32.0);
-
-        diffuse = spotIntensity * diffuseFactor * spotLightDiffuse * textureColor;
-        specular = spotIntensity * specularFactor * specularColor;
+        spotDiffuse = spotIntensity * spotDiffuseFactor * spotLightDiffuse * textureColor;
+        spotSpecular = spotIntensity * spotSpecularFactor * specularColor;
     }
 
-    vec3 result = ambient + diffuse + specular;
+    vec3 result = ambient + (pointDiffuse + pointSpecular) + (spotDiffuse + spotSpecular);
 
     FragColor = vec4(result, 1.0);
 }
