@@ -12,7 +12,7 @@ class MainController : public engine::core::Controller{
     void update() override;
 
     void begin_draw() override;
-    void draw_tunnel();
+    void draw_space();
     void draw() override;
     void end_draw() override;
 };
