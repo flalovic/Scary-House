@@ -62,18 +62,30 @@ void MainController::draw() {
 
 void MainController::draw_space() {
     auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
-    auto shader = engine::core::Controller::get<engine::resources::ResourcesController>()->shader("basic");
-    auto backpack = engine::core::Controller::get<engine::resources::ResourcesController>()->model("scary");
+    auto resources = engine::core::Controller::get<engine::resources::ResourcesController>();
+
+    auto shader = resources->shader("advanced");
+    auto house = resources->model("scary");
 
     shader->use();
+
     shader->set_mat4("projection", graphics->projection_matrix());
     shader->set_mat4("view", graphics->camera()->view_matrix());
 
-    auto model = glm::mat4(1.0f);
-
+    glm::mat4 model(1.0f);
     shader->set_mat4("model", model);
 
-    backpack->draw(shader);
+    // Kamera
+    shader->set_vec3("camPos", graphics->camera()->Position);
+
+    // Spotlight (na kameri)
+    shader->set_vec3("spotLightPos", graphics->camera()->Position);
+    shader->set_vec3("spotLightDir", graphics->camera()->Front);
+
+    shader->set_float("spotInnerCutOff", glm::cos(glm::radians(12.5f)));
+    shader->set_float("spotOuterCutOff", glm::cos(glm::radians(17.5f)));
+
+    house->draw(shader);
 }
 
 void MainController::end_draw() {
