@@ -126,7 +126,7 @@ Model *ResourcesController::model(const std::string &name) {
         }
         std::filesystem::path model_path = m_models_path / std::filesystem::path(config["resources"]["models"][name]["path"].get<std::string>());
         Assimp::Importer importer;
-        int flags = aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace;
+        int flags = aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_PreTransformVertices;
         if (config["resources"]["models"][name].value<bool>("flip_uvs", false)) {
             flags |= aiProcess_FlipUVs;
         }

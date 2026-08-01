@@ -9,6 +9,8 @@
 #include <engine/platform/PlatformController.hpp>
 #include <engine/resources/ResourcesController.hpp>
 
+#include <glm/gtc/matrix_transform.hpp>
+
 void MainController::initialize() {
     engine::graphics::OpenGL::enable_depth_testing();
 
@@ -51,20 +53,20 @@ void MainController::begin_draw() {
 
 void MainController::draw() {
     // draw
-    draw_tunnel();
+    draw_space();
 }
 
-void MainController::draw_tunnel() {
+void MainController::draw_space() {
     auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
     auto shader = engine::core::Controller::get<engine::resources::ResourcesController>()->shader("basic");
-    auto backpack = engine::core::Controller::get<engine::resources::ResourcesController>()->model("tunnel");
+    auto backpack = engine::core::Controller::get<engine::resources::ResourcesController>()->model("scary");
 
     shader->use();
     shader->set_mat4("projection", graphics->projection_matrix());
     shader->set_mat4("view", graphics->camera()->view_matrix());
 
-    glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(1.0f));
+    auto model = glm::mat4(1.0f);
+
     shader->set_mat4("model", model);
 
     backpack->draw(shader);

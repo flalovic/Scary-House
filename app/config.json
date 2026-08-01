@@ -1,15 +1,15 @@
 {
   "resources": {
     "models": {
-      "tunnel": {
-        "path": "tunnel/scene.gltf",
-        "flip_uvs": false
+      "scary": {
+        "path": "scary_interior/scene.gltf",
+        "flip_uvs": true
       }
     }
   },
   "window": {
     "height": 600,
-    "title": "Mine",
+    "title": "Scary House",
     "width": 800
   }
 }
