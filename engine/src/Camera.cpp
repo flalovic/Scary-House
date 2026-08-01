@@ -15,6 +15,13 @@ Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch)
     update_camera_vectors();
 }
 
+void Camera::set_pose(const glm::vec3& position, float yaw, float pitch) {
+    Position = position;
+    Yaw = yaw;
+    Pitch = pitch;
+    update_camera_vectors();
+}
+
 // returns the view matrix calculated using Euler Angles and the LookAt Matrix
 glm::mat4 Camera::view_matrix() const {
     return glm::lookAt(Position, Position + Front, Up);

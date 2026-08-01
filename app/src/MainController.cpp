@@ -17,6 +17,13 @@ void MainController::initialize() {
 
     auto platform = engine::core::Controller::get<engine::platform::PlatformController>();
     platform->set_enable_cursor(false);
+
+    auto camera = engine::core::Controller::get<engine::graphics::GraphicsController>()->camera();
+    camera->set_pose(
+        glm::vec3(-3.475257f, 1.576614f, 1.998679f),
+        -13.900038f,
+        -2.000012f
+    );
 }
 
 bool MainController::loop() {
@@ -29,26 +36,50 @@ bool MainController::loop() {
 
 void MainController::update() {
     auto gui_controller = engine::core::Controller::get<app::GUIController>();;
-    if (!gui_controller->is_enabled()) {
-        auto platform = engine::core::Controller::get<engine::platform::PlatformController>();
-        auto camera = engine::core::Controller::get<engine::graphics::GraphicsController>()->camera();
-        float dt = platform->dt();
-        if (platform->key(engine::platform::KEY_W).state() == engine::platform::Key::State::Pressed) {
-            camera->move_camera(engine::graphics::Camera::Movement::FORWARD, dt);
+    if (gui_controller->is_enabled()) return;
+
+    auto platform = engine::core::Controller::get<engine::platform::PlatformController>();
+    auto camera = engine::core::Controller::get<engine::graphics::GraphicsController>()->camera();
+    float dt = platform->dt();
+
+    if (platform->key(engine::platform::KEY_K).state() == engine::platform::Key::State::JustPressed) {
+        if (m_wizard_state == EventState::IDLE) {
+            m_wizard_state = EventState::WAITING_TO_SHOW;
+            m_wizard_timer = 0.0f;
         }
-        if (platform->key(engine::platform::KEY_S).state() == engine::platform::Key::State::Pressed) {
-            camera->move_camera(engine::graphics::Camera::Movement::BACKWARD, dt);
-        }
-        if (platform->key(engine::platform::KEY_A).state() == engine::platform::Key::State::Pressed) {
-            camera->move_camera(engine::graphics::Camera::Movement::LEFT, dt);
-        }
-        if (platform->key(engine::platform::KEY_D).state() == engine::platform::Key::State::Pressed) {
-            camera->move_camera(engine::graphics::Camera::Movement::RIGHT, dt);
-        }
-        auto mouse = platform->mouse();
-        camera->rotate_camera(mouse.dx, mouse.dy);
-        camera->zoom(mouse.scroll);
     }
+
+    if (m_wizard_state != EventState::IDLE) {
+        m_wizard_timer += dt;
+
+        // Nakon 2s -> Prikazi wizarda
+        if (m_wizard_state == EventState::WAITING_TO_SHOW && m_wizard_timer >= 2.0f) {
+            m_show_wizard = true;
+            m_wizard_timer = 0.0f;
+            m_wizard_state = EventState::WAITING_TO_HIDE;
+        }
+        // Nakon jos 2s -> Sakrij wizarda
+        else if (m_wizard_state == EventState::WAITING_TO_HIDE && m_wizard_timer >= 2.0f) {
+            m_show_wizard = false;
+            m_wizard_state = EventState::IDLE;
+        }
+    }
+
+    if (platform->key(engine::platform::KEY_W).state() == engine::platform::Key::State::Pressed) {
+        camera->move_camera(engine::graphics::Camera::Movement::FORWARD, dt);
+    }
+    if (platform->key(engine::platform::KEY_S).state() == engine::platform::Key::State::Pressed) {
+        camera->move_camera(engine::graphics::Camera::Movement::BACKWARD, dt);
+    }
+    if (platform->key(engine::platform::KEY_A).state() == engine::platform::Key::State::Pressed) {
+        camera->move_camera(engine::graphics::Camera::Movement::LEFT, dt);
+    }
+    if (platform->key(engine::platform::KEY_D).state() == engine::platform::Key::State::Pressed) {
+        camera->move_camera(engine::graphics::Camera::Movement::RIGHT, dt);
+    }
+    auto mouse = platform->mouse();
+    camera->rotate_camera(mouse.dx, mouse.dy);
+    camera->zoom(mouse.scroll);
 }
 
 void MainController::begin_draw() {
@@ -60,6 +91,10 @@ void MainController::draw() {
     draw_space();
     draw_pillar();
     draw_lightbox();
+
+    if (m_show_wizard) {
+        draw_wizard();
+    }
 }
 
 void MainController::draw_space() {
@@ -147,6 +182,35 @@ void MainController::draw_lightbox() {
 
     shader->set_vec3("lightColor", glm::vec3(1.0f, 0.9f, 0.7f));
     light_box->draw(shader);
+}
+
+void MainController::draw_wizard() {
+    auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
+    auto resources = engine::core::Controller::get<engine::resources::ResourcesController>();
+    auto gui_controller = engine::core::Controller::get<app::GUIController>();
+
+    auto shader = resources->shader("advanced");
+    auto wizard = resources->model("wizard");
+
+    shader->use();
+
+    shader->set_mat4("projection", graphics->projection_matrix());
+    shader->set_mat4("view", graphics->camera()->view_matrix());
+
+    glm::mat4 model(1.0f);
+    model = glm::translate(model, glm::vec3(-2.0f, 1.0f, 1.1f));
+    model = glm::scale(model, glm::vec3(1.5f));
+    shader->set_mat4("model", model);
+
+    shader->set_vec3("camPos", graphics->camera()->Position);
+    shader->set_vec3("spotLightPos", graphics->camera()->Position);
+    shader->set_vec3("spotLightDir", graphics->camera()->Front);
+    shader->set_float("spotInnerCutOff", glm::cos(glm::radians(12.5f)));
+    shader->set_float("spotOuterCutOff", glm::cos(glm::radians(17.5f)));
+    shader->set_bool("spotLightEnabled", gui_controller->is_spotlight_enabled());
+    shader->set_vec3("spotLightDiffuse", gui_controller->spotlight_diffuse_color());
+
+    wizard->draw(shader);
 }
 
 void MainController::end_draw() {

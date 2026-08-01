@@ -12,6 +12,10 @@
       "magma_ball": {
         "path": "magma_ball/scene.gltf",
         "flip_uvs": true
+      },
+      "wizard": {
+        "path": "wizard/scene.gltf",
+        "flip_uvs": true
       }
     }
   },
