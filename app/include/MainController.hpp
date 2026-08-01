@@ -8,13 +8,12 @@
 
 class MainController : public engine::core::Controller{
     void initialize() override;
-
     bool loop() override;
+    void update() override;
 
     void begin_draw() override;
-
+    void draw_tunnel();
     void draw() override;
-
     void end_draw() override;
 };
 
