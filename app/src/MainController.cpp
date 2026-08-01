@@ -81,9 +81,13 @@ void MainController::draw_space() {
     // Spotlight (na kameri)
     shader->set_vec3("spotLightPos", graphics->camera()->Position);
     shader->set_vec3("spotLightDir", graphics->camera()->Front);
-
     shader->set_float("spotInnerCutOff", glm::cos(glm::radians(12.5f)));
     shader->set_float("spotOuterCutOff", glm::cos(glm::radians(17.5f)));
+
+    // Slanje komandi iz GUI-ja u shader
+    auto gui_controller = engine::core::Controller::get<app::GUIController>();
+    shader->set_bool("spotLightEnabled", gui_controller->is_spotlight_enabled());
+    shader->set_vec3("spotLightDiffuse", gui_controller->spotlight_diffuse_color());
 
     house->draw(shader);
 }
