@@ -24,12 +24,12 @@ namespace app {
 
     void GUIController::draw() {
         auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
-        auto camera = engine::core::Controller::get<engine::graphics::GraphicsController>()->camera();
+        auto camera = graphics->camera();
 
         graphics->begin_gui();
-        ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(420, 360), ImGuiCond_FirstUseEver);
 
-        ImGui::Begin("Camera info");
+        ImGui::Begin("Settings");
 
         // Kamera info
         const auto &c = *camera;
@@ -40,13 +40,24 @@ namespace app {
         ImGui::Separator();
         ImGui::Text("Spotlight Controls");
 
-        // Prekidač za uključivanje/isključivanje i birač boje
         ImGui::Checkbox("Enable Spotlight", &m_spotlight_enabled);
 
-        // Opciono: onemogući biranje boje ako je spotlight isključen
         if (!m_spotlight_enabled) ImGui::BeginDisabled();
         ImGui::ColorEdit3("Diffuse Color", glm::value_ptr(m_spotlight_diffuse));
         if (!m_spotlight_enabled) ImGui::EndDisabled();
+
+        ImGui::Separator();
+        ImGui::Text("Post-processing");
+
+        m_bloom_enabled = graphics->bloom_enabled();
+        if (ImGui::Checkbox("Enable Bloom", &m_bloom_enabled)) {
+            graphics->enable_bloom(m_bloom_enabled);
+        }
+
+        ImGui::SliderFloat("Exposure", &m_exposure, 0.0f, 1.0f, "%.2f");
+        if (ImGui::IsItemEdited()) {
+            graphics->set_exposure(m_exposure);
+        }
 
         ImGui::End();
         graphics->end_gui();

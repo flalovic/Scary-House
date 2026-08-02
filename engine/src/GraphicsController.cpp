@@ -1,4 +1,3 @@
-
 // clang-format off
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -33,6 +32,8 @@ void GraphicsController::initialize() {
 
     platform->register_platform_event_observer(std::make_unique<GraphicsPlatformEventObserver>(this));
     CHECKED_GL_CALL(glViewport, 0, 0, platform->window()->width(), platform->window()->height());
+
+    initialize_bloom();
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -87,7 +88,7 @@ void GraphicsController::draw_skybox(const resources::Shader *shader, const reso
     CHECKED_GL_CALL(glBindTexture, GL_TEXTURE_CUBE_MAP, skybox->texture());
     CHECKED_GL_CALL(glDrawArrays, GL_TRIANGLES, 0, 36);
     CHECKED_GL_CALL(glBindVertexArray, 0);
-    CHECKED_GL_CALL(glDepthFunc, GL_LESS);// set depth function back to default
+    CHECKED_GL_CALL(glDepthFunc, GL_LESS);
     CHECKED_GL_CALL(glBindTexture, GL_TEXTURE_CUBE_MAP, 0);
 }
 
@@ -96,7 +97,6 @@ static void render_quad() {
     static GLuint quadVBO = 0;
     if (quadVAO == 0) {
         float quadVertices[] = {
-            // positions   // texture Coords
             -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
             -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
              1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
@@ -146,6 +146,7 @@ void GraphicsController::initialize_bloom() {
 
     CHECKED_GL_CALL(glGenFramebuffers, 2, m_pingpong_fbo);
     CHECKED_GL_CALL(glGenTextures, 2, m_pingpong_color_buffers);
+
     for (unsigned int i = 0; i < 2; i++) {
         CHECKED_GL_CALL(glBindFramebuffer, GL_FRAMEBUFFER, m_pingpong_fbo[i]);
         CHECKED_GL_CALL(glBindTexture, GL_TEXTURE_2D, m_pingpong_color_buffers[i]);
@@ -167,6 +168,7 @@ void GraphicsController::destroy_bloom() {
         CHECKED_GL_CALL(glDeleteRenderbuffers, 1, &m_hdr_depth_rbo);
         m_hdr_fbo = 0;
     }
+
     if (m_pingpong_fbo[0]) {
         CHECKED_GL_CALL(glDeleteFramebuffers, 2, m_pingpong_fbo);
         CHECKED_GL_CALL(glDeleteTextures, 2, m_pingpong_color_buffers);
@@ -175,45 +177,43 @@ void GraphicsController::destroy_bloom() {
 }
 
 void GraphicsController::resize_bloom_buffers(int width, int height) {
-    if (!m_bloom_enabled) return;
     destroy_bloom();
     initialize_bloom();
 }
 
-    void GraphicsController::enable_bloom(bool enabled) {
-    if (m_bloom_enabled == enabled) return;
+void GraphicsController::enable_bloom(bool enabled) {
     m_bloom_enabled = enabled;
-    if (m_bloom_enabled) {
-        initialize_bloom();
-    } else {
-        destroy_bloom();
-    }
 }
 
 bool GraphicsController::bloom_enabled() const {
     return m_bloom_enabled;
 }
 
+void GraphicsController::set_exposure(float exposure) {
+    m_exposure = exposure;
+}
+
 void GraphicsController::begin_render() {
-    if (m_bloom_enabled) {
-        CHECKED_GL_CALL(glBindFramebuffer, GL_FRAMEBUFFER, m_hdr_fbo);
-        CHECKED_GL_CALL(glClear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
+    CHECKED_GL_CALL(glBindFramebuffer, GL_FRAMEBUFFER, m_hdr_fbo);
+    CHECKED_GL_CALL(glClear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void GraphicsController::end_render() {
     if (m_bloom_enabled) {
         blur_pass();
-        final_pass();
     }
+
+    final_pass();
 }
 
 void GraphicsController::blur_pass() {
     auto resources = engine::core::Controller::get<engine::resources::ResourcesController>();
     auto shaderBlur = resources->shader("blur");
 
-    bool horizontal = true, first_iteration = true;
+    bool horizontal = true;
+    bool first_iteration = true;
     unsigned int amount = 10;
+
     shaderBlur->use();
 
     for (unsigned int i = 0; i < amount; i++) {
@@ -221,12 +221,16 @@ void GraphicsController::blur_pass() {
         shaderBlur->set_int("horizontal", horizontal);
 
         CHECKED_GL_CALL(glActiveTexture, GL_TEXTURE0);
-        CHECKED_GL_CALL(glBindTexture, GL_TEXTURE_2D, first_iteration ? m_hdr_color_buffers[1] : m_pingpong_color_buffers[!horizontal]);
+        CHECKED_GL_CALL(glBindTexture, GL_TEXTURE_2D,
+            first_iteration ? m_hdr_color_buffers[1] : m_pingpong_color_buffers[!horizontal]);
 
         render_quad();
+
         horizontal = !horizontal;
-        if (first_iteration) first_iteration = false;
+        if (first_iteration)
+            first_iteration = false;
     }
+
     CHECKED_GL_CALL(glBindFramebuffer, GL_FRAMEBUFFER, 0);
 }
 
@@ -248,8 +252,9 @@ void GraphicsController::final_pass() {
     shaderFinal->set_int("bloomBlur", 1);
 
     shaderFinal->set_bool("bloom", m_bloom_enabled);
-    shaderFinal->set_float("exposure", 1.0f);
+    shaderFinal->set_float("exposure", m_exposure);
 
     render_quad();
 }
-}// namespace engine::graphics
+
+} // namespace engine::graphics

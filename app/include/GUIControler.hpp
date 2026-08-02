@@ -15,6 +15,8 @@ namespace app {
 
         bool m_spotlight_enabled = true;
         glm::vec3 m_spotlight_diffuse = glm::vec3(0.8f, 0.8f, 0.8f);
+        bool m_bloom_enabled = true;
+        float m_exposure = 0.2f;
 
     public:
         void render_gui() {

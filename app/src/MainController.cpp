@@ -17,6 +17,7 @@ void MainController::initialize() {
 
     auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
     graphics->enable_bloom(true);
+    graphics->set_exposure(0.2f);
 
     auto platform = engine::core::Controller::get<engine::platform::PlatformController>();
     platform->set_enable_cursor(false);

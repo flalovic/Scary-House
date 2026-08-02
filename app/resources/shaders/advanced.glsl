@@ -55,7 +55,7 @@ void main()
     vec3 specularColor = vec3(0.6);
 
     vec3 pointLightPos = vec3(0.947171, 1.595212, 1.226468);
-    vec3 pointLightColor = vec3(0.9608, 0.5882, 0.2353);
+    vec3 pointLightColor = vec3(2.0, 1.7, 0.5);
 
     vec3 pointLightDir = normalize(pointLightPos - FragPos);
     float distance = length(pointLightPos - FragPos);
@@ -87,14 +87,18 @@ void main()
         vec3 spotReflectDir = reflect(-spotLightDirNorm, normal);
         float spotSpecularFactor = pow(max(dot(viewDir, spotReflectDir), 0.0), 32.0);
 
-        spotDiffuse = spotIntensity * spotDiffuseFactor * spotLightDiffuse * textureColor;
-        spotSpecular = spotIntensity * spotSpecularFactor * specularColor;
+        vec3 hdrSpotlightBoost = vec3(2.5);
+        spotDiffuse = spotIntensity * spotDiffuseFactor * spotLightDiffuse * textureColor * hdrSpotlightBoost;
+        spotSpecular = spotIntensity * spotSpecularFactor * specularColor * hdrSpotlightBoost;
     }
 
     vec3 result = ambient + pointDiffuse + pointSpecular + spotDiffuse + spotSpecular;
 
     FragColor = vec4(result, 1.0);
 
-    // Ovaj shader ne doprinosi bloom efektu.
-    BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
+    float brightness = dot(result, vec3(0.2126, 0.7152, 0.0722));
+//    if (brightness > 1.0)
+//        BrightColor = vec4(result, 1.0);
+//    else
+        BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
 }

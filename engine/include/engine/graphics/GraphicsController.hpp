@@ -89,6 +89,8 @@ public:
     void enable_bloom(bool enabled);
     bool bloom_enabled() const;
 
+    void set_exposure(float exposure);
+
     void begin_render();
     void end_render();
 
