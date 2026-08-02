@@ -39,12 +39,18 @@ bool MainController::loop() {
 }
 
 void MainController::update() {
-    auto gui_controller = engine::core::Controller::get<app::GUIController>();;
-    if (gui_controller->is_enabled()) return;
-
     auto platform = engine::core::Controller::get<engine::platform::PlatformController>();
-    auto camera = engine::core::Controller::get<engine::graphics::GraphicsController>()->camera();
+    auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
+    auto camera = graphics->camera();
     float dt = platform->dt();
+
+    auto gui_controller = engine::core::Controller::get<app::GUIController>();
+    if (gui_controller->is_enabled()) {
+        auto mouse = platform->mouse();
+        camera->zoom(mouse.scroll);
+        graphics->perspective_params().FOV = glm::radians(camera->Zoom);
+        return;
+    }
 
     if (platform->key(engine::platform::KEY_K).state() == engine::platform::Key::State::JustPressed) {
         if (m_wizard_state == EventState::IDLE) {
@@ -84,6 +90,7 @@ void MainController::update() {
     auto mouse = platform->mouse();
     camera->rotate_camera(mouse.dx, mouse.dy);
     camera->zoom(mouse.scroll);
+    graphics->perspective_params().FOV = glm::radians(camera->Zoom);
 }
 
 void MainController::begin_draw() {
