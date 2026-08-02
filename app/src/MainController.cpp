@@ -15,6 +15,9 @@
 void MainController::initialize() {
     engine::graphics::OpenGL::enable_depth_testing();
 
+    auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
+    graphics->enable_bloom(true);
+
     auto platform = engine::core::Controller::get<engine::platform::PlatformController>();
     platform->set_enable_cursor(false);
 
@@ -84,6 +87,9 @@ void MainController::update() {
 
 void MainController::begin_draw() {
     engine::graphics::OpenGL::clear_buffers();
+
+    auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
+    graphics->begin_render();
 }
 
 void MainController::draw() {
@@ -214,5 +220,12 @@ void MainController::draw_wizard() {
 }
 
 void MainController::end_draw() {
+    auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
+    graphics->end_render();
+
+    if (auto gui_controller = engine::core::Controller::get<app::GUIController>(); gui_controller->is_enabled()) {
+        gui_controller->render_gui();
+    }
+
     engine::core::Controller::get<engine::platform::PlatformController>()->swap_buffers();
 }

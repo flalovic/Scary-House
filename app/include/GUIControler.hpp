@@ -17,6 +17,10 @@ namespace app {
         glm::vec3 m_spotlight_diffuse = glm::vec3(0.8f, 0.8f, 0.8f);
 
     public:
+        void render_gui() {
+            draw();
+        }
+
         [[nodiscard]] bool is_spotlight_enabled() const { return m_spotlight_enabled; }
         [[nodiscard]] const glm::vec3& spotlight_diffuse_color() const { return m_spotlight_diffuse; }
     };

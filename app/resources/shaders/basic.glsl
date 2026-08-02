@@ -24,12 +24,23 @@ void main()
 //#shader fragment
 #version 330 core
 
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BrightColor;
 
 in vec2 TexCoords;
 
 uniform sampler2D texture_diffuse1;
 
 void main() {
-    FragColor = vec4(texture(texture_diffuse1, TexCoords).rgb, 1.0);
+    vec3 texColor = texture(texture_diffuse1, TexCoords).rgb;
+    vec3 result = texColor * 2.0;
+
+    FragColor = vec4(result, 1.0);
+
+    // The light sphere is the only source that should contribute to bloom.
+    float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+    if(brightness > 0.7)
+        BrightColor = vec4(FragColor.rgb * 0.85, 1.0);
+    else
+        BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
 }

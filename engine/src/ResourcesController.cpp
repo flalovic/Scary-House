@@ -9,8 +9,26 @@
 #include <spdlog/spdlog.h>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 namespace engine::resources {
+namespace {
+std::filesystem::path resolve_resource_dir(const std::filesystem::path &path) {
+    if (path.empty()) {
+        return {};
+    }
+    if (std::filesystem::exists(path)) {
+        return std::filesystem::absolute(path);
+    }
+
+    const std::filesystem::path engine_fallback = std::filesystem::path("../engine") / path;
+    if (std::filesystem::exists(engine_fallback)) {
+        return std::filesystem::absolute(engine_fallback);
+    }
+
+    return std::filesystem::absolute(path);
+}
+} // namespace
 
 void ResourcesController::initialize() {
     load_shaders();
@@ -36,19 +54,21 @@ void ResourcesController::terminate() {
 
 
 void ResourcesController::load_shaders() {
-    if (!exists(m_shaders_path)) {
-        spdlog::info("[ResourcesController]: no {} found to load the shaders from", m_shaders_path.string());
+    const auto shaders_path = resolve_resource_dir(m_shaders_path);
+    if (!exists(shaders_path)) {
+        spdlog::info("[ResourcesController]: no {} found to load the shaders from", shaders_path.string());
         return;
     }
-    for (const auto &shader_path: std::filesystem::directory_iterator(m_shaders_path)) {
+    for (const auto &shader_path: std::filesystem::directory_iterator(shaders_path)) {
         const auto name = shader_path.path().stem().string();
         shader(name, shader_path);
     }
 }
 
 void ResourcesController::load_models() {
-    if (!exists(m_models_path)) {
-        spdlog::info("[ResourcesController]: no {} found to load the models from", m_models_path.string());
+    const auto models_path = resolve_resource_dir(m_models_path);
+    if (!exists(models_path)) {
+        spdlog::info("[ResourcesController]: no {} found to load the models from", models_path.string());
         return;
     }
     const auto &config = util::Configuration::config();
@@ -62,21 +82,23 @@ void ResourcesController::load_models() {
 }
 
 void ResourcesController::load_textures() {
-    if (!exists(m_textures_path)) {
-        spdlog::info("[ResourcesController]: no {} found to load the textures from", m_textures_path.string());
+    const auto textures_path = resolve_resource_dir(m_textures_path);
+    if (!exists(textures_path)) {
+        spdlog::info("[ResourcesController]: no {} found to load the textures from", textures_path.string());
         return;
     }
-    for (const auto &texture_entry: std::filesystem::directory_iterator(m_textures_path)) {
+    for (const auto &texture_entry: std::filesystem::directory_iterator(textures_path)) {
         texture(texture_entry.path().stem().string(), texture_entry.path());
     }
 }
 
 void ResourcesController::load_skyboxes() {
-    if (!exists(m_skyboxes_path)) {
-        spdlog::info("[ResourcesController]: no {} found to load the skyboxes from", m_skyboxes_path.string());
+    const auto skyboxes_path = resolve_resource_dir(m_skyboxes_path);
+    if (!exists(skyboxes_path)) {
+        spdlog::info("[ResourcesController]: no {} found to load the skyboxes from", skyboxes_path.string());
         return;
     }
-    for (const auto &sky_boxes_entry: std::filesystem::directory_iterator(m_skyboxes_path)) {
+    for (const auto &sky_boxes_entry: std::filesystem::directory_iterator(skyboxes_path)) {
         skybox(sky_boxes_entry.path().stem().string(), sky_boxes_entry.path());
     }
 }
@@ -119,12 +141,13 @@ private:
 Model *ResourcesController::model(const std::string &name) {
     auto &result = m_models[name];
     if (!result) {
+        const auto models_path = resolve_resource_dir(m_models_path);
         auto &config = util::Configuration::config();
         if (!config["resources"]["models"].contains(name)) {
             std::string msg = std::format("No model ({}) specify in config.json. Please add the model to the config.json.", name);
             throw util::EngineError(util::EngineError::Type::ConfigurationError, msg);
         }
-        std::filesystem::path model_path = m_models_path / std::filesystem::path(config["resources"]["models"][name]["path"].get<std::string>());
+        std::filesystem::path model_path = models_path / std::filesystem::path(config["resources"]["models"][name]["path"].get<std::string>());
         Assimp::Importer importer;
         int flags = aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_PreTransformVertices;
         if (config["resources"]["models"][name].value<bool>("flip_uvs", false)) {
@@ -168,8 +191,18 @@ Skybox *ResourcesController::skybox(const std::string &name, const std::filesyst
 Shader *ResourcesController::shader(const std::string &name, const std::filesystem::path &path) {
     auto &result = m_shaders[name];
     if (!result) {
-        spdlog::info("load_shader(path={})", path.string());
-        result = std::make_unique<Shader>(ShaderCompiler::compile_from_file(name, path));
+        std::filesystem::path shader_path = path;
+        if (shader_path.empty()) {
+            shader_path = resolve_resource_dir(m_shaders_path / (name + ".glsl"));
+            if (!std::filesystem::exists(shader_path)) {
+                shader_path = resolve_resource_dir(std::filesystem::path("../engine") / m_shaders_path / (name + ".glsl"));
+            }
+        } else {
+            shader_path = resolve_resource_dir(shader_path);
+        }
+
+        spdlog::info("load_shader(path={})", shader_path.string());
+        result = std::make_unique<Shader>(ShaderCompiler::compile_from_file(name, shader_path));
     }
     return result.get();
 }

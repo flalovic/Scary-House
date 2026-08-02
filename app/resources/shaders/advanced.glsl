@@ -25,6 +25,9 @@ void main()
 //#shader fragment
 #version 330 core
 
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BrightColor;
+
 in vec3 FragPos;
 in vec2 TexCoords;
 in vec3 Normal;
@@ -39,8 +42,6 @@ uniform float spotInnerCutOff;
 uniform float spotOuterCutOff;
 uniform bool spotLightEnabled;
 uniform vec3 spotLightDiffuse;
-
-out vec4 FragColor;
 
 void main()
 {
@@ -90,7 +91,10 @@ void main()
         spotSpecular = spotIntensity * spotSpecularFactor * specularColor;
     }
 
-    vec3 result = ambient + (pointDiffuse + pointSpecular) + (spotDiffuse + spotSpecular);
+    vec3 result = ambient + pointDiffuse + pointSpecular + spotDiffuse + spotSpecular;
 
     FragColor = vec4(result, 1.0);
+
+    // Ovaj shader ne doprinosi bloom efektu.
+    BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
 }

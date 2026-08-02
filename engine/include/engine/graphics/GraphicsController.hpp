@@ -86,6 +86,14 @@ public:
     */
     void draw_skybox(const resources::Shader *shader, const resources::Skybox *skybox);
 
+    void enable_bloom(bool enabled);
+    bool bloom_enabled() const;
+
+    void begin_render();
+    void end_render();
+
+    void resize_bloom_buffers(int width, int height);
+
     Camera *camera() {
         return &m_camera;
     }
@@ -167,6 +175,24 @@ private:
     glm::mat4 m_projection_matrix{};
     Camera m_camera{};
     ImGuiContext *m_imgui_context{};
+
+    void initialize_bloom();
+    void destroy_bloom();
+
+    void blur_pass();
+    void final_pass();
+
+    bool m_bloom_enabled = false;
+
+    float m_exposure = 1.0f;
+    float m_threshold = 1.0f;
+
+    unsigned int m_hdr_fbo = 0;
+    unsigned int m_hdr_color_buffers[2] = {0, 0};
+    unsigned int m_hdr_depth_rbo = 0;
+
+    unsigned int m_pingpong_fbo[2] = {0, 0};
+    unsigned int m_pingpong_color_buffers[2] = {0, 0};
 };
 
 /**
