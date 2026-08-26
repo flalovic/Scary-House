@@ -42,6 +42,43 @@ uniform float spotInnerCutOff;
 uniform float spotOuterCutOff;
 uniform bool spotLightEnabled;
 uniform vec3 spotLightDiffuse;
+uniform vec3 pointLightPos;
+uniform vec3 pointLightDiffuse;
+uniform samplerCube pointShadowMap;
+uniform bool pointShadows;
+uniform float far_plane;
+
+vec3 sampleOffsetDirections[20] = vec3[]
+(
+    vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1),
+    vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+    vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+    vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+    vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+);
+
+float calculatePointShadow(vec3 fragPos)
+{
+    vec3 fragToLight = fragPos - pointLightPos;
+    float currentDepth = length(fragToLight);
+    float shadow = 0.0;
+    float bias = 0.15;
+    float viewDistance = length(camPos - fragPos);
+    float diskRadius = (1.0 + (viewDistance / far_plane)) / 25.0;
+
+    for (int sampleIndex = 0; sampleIndex < 20; ++sampleIndex)
+    {
+        float closestDepth = texture(
+            pointShadowMap,
+            fragToLight + sampleOffsetDirections[sampleIndex] * diskRadius
+        ).r;
+        closestDepth *= far_plane;
+        if (currentDepth - bias > closestDepth)
+            shadow += 1.0;
+    }
+
+    return shadow / 20.0;
+}
 
 void main()
 {
@@ -53,9 +90,6 @@ void main()
     vec3 ambient = ambientColor * textureColor;
 
     vec3 specularColor = vec3(0.6);
-
-    vec3 pointLightPos = vec3(0.947171, 1.595212, 1.226468);
-    vec3 pointLightColor = vec3(2.0, 1.7, 0.5);
 
     vec3 pointLightDir = normalize(pointLightPos - FragPos);
     float distance = length(pointLightPos - FragPos);
@@ -69,8 +103,9 @@ void main()
     vec3 pointReflectDir = reflect(-pointLightDir, normal);
     float pointSpecularFactor = pow(max(dot(viewDir, pointReflectDir), 0.0), 32.0);
 
-    vec3 pointDiffuse = pointDiffuseFactor * pointLightColor * textureColor * attenuation;
-    vec3 pointSpecular = pointSpecularFactor * specularColor * attenuation;
+    vec3 pointDiffuse = pointDiffuseFactor * pointLightDiffuse * textureColor * attenuation;
+    vec3 pointSpecular = pointSpecularFactor * pointLightDiffuse * attenuation;
+    float pointShadow = pointShadows ? calculatePointShadow(FragPos) : 0.0;
 
     vec3 spotDiffuse = vec3(0.0);
     vec3 spotSpecular = vec3(0.0);
@@ -92,7 +127,8 @@ void main()
         spotSpecular = spotIntensity * spotSpecularFactor * specularColor * hdrSpotlightBoost;
     }
 
-    vec3 result = ambient + pointDiffuse + pointSpecular + spotDiffuse + spotSpecular;
+    vec3 pointLighting = (1.0 - pointShadow) * (pointDiffuse + pointSpecular);
+    vec3 result = ambient + pointLighting + spotDiffuse + spotSpecular;
 
     FragColor = vec4(result, 1.0);
 

@@ -12,12 +12,16 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+MainController::MainController() {
+    auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
+    graphics->enable_bloom(true);
+    graphics->set_exposure(0.15f);
+}
+
 void MainController::initialize() {
     engine::graphics::OpenGL::enable_depth_testing();
 
     auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
-    graphics->enable_bloom(true);
-    graphics->set_exposure(0.2f);
 
     auto platform = engine::core::Controller::get<engine::platform::PlatformController>();
     platform->set_enable_cursor(false);
@@ -94,9 +98,12 @@ void MainController::update() {
 }
 
 void MainController::begin_draw() {
-    engine::graphics::OpenGL::clear_buffers();
-
     auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
+    if (graphics->point_shadows_enabled()) {
+        graphics->begin_point_shadow_pass(m_point_light_position);
+        draw_point_shadow_scene();
+        graphics->end_point_shadow_pass();
+    }
     graphics->begin_render();
 }
 
@@ -105,10 +112,7 @@ void MainController::draw() {
     draw_space();
     draw_pillar();
     draw_lightbox();
-
-    if (m_show_wizard) {
-        draw_wizard();
-    }
+    draw_wizard();
 }
 
 void MainController::draw_space() {
@@ -132,13 +136,15 @@ void MainController::draw_space() {
     // Spotlight (na kameri)
     shader->set_vec3("spotLightPos", graphics->camera()->Position);
     shader->set_vec3("spotLightDir", graphics->camera()->Front);
+    shader->set_vec3("pointLightPos", m_point_light_position);
+    shader->set_vec3("pointLightDiffuse", point_light_diffuse_color());
     shader->set_float("spotInnerCutOff", glm::cos(glm::radians(12.5f)));
     shader->set_float("spotOuterCutOff", glm::cos(glm::radians(17.5f)));
 
     // Slanje komandi iz GUI-ja u shader
-    auto gui_controller = engine::core::Controller::get<app::GUIController>();
-    shader->set_bool("spotLightEnabled", gui_controller->is_spotlight_enabled());
-    shader->set_vec3("spotLightDiffuse", gui_controller->spotlight_diffuse_color());
+    shader->set_bool("spotLightEnabled", is_spotlight_enabled());
+    shader->set_vec3("spotLightDiffuse", spotlight_diffuse_color());
+    graphics->bind_point_shadow_map(shader);
 
     house->draw(shader);
 }
@@ -146,8 +152,6 @@ void MainController::draw_space() {
 void MainController::draw_pillar() {
     auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
     auto resources = engine::core::Controller::get<engine::resources::ResourcesController>();
-    auto gui_controller = engine::core::Controller::get<app::GUIController>();
-
     auto shader = resources->shader("advanced");
     auto pillar = resources->model("pillar");
 
@@ -165,10 +169,13 @@ void MainController::draw_pillar() {
     shader->set_vec3("camPos", graphics->camera()->Position);
     shader->set_vec3("spotLightPos", graphics->camera()->Position);
     shader->set_vec3("spotLightDir", graphics->camera()->Front);
+    shader->set_vec3("pointLightPos", m_point_light_position);
+    shader->set_vec3("pointLightDiffuse", point_light_diffuse_color());
     shader->set_float("spotInnerCutOff", glm::cos(glm::radians(12.5f)));
     shader->set_float("spotOuterCutOff", glm::cos(glm::radians(17.5f)));
-    shader->set_bool("spotLightEnabled", gui_controller->is_spotlight_enabled());
-    shader->set_vec3("spotLightDiffuse", gui_controller->spotlight_diffuse_color());
+    shader->set_bool("spotLightEnabled", is_spotlight_enabled());
+    shader->set_vec3("spotLightDiffuse", spotlight_diffuse_color());
+    graphics->bind_point_shadow_map(shader);
 
     pillar->draw(shader);
 }
@@ -185,24 +192,22 @@ void MainController::draw_lightbox() {
     shader->set_mat4("projection", graphics->projection_matrix());
     shader->set_mat4("view", graphics->camera()->view_matrix());
 
-    // glm::vec3 pillar_top = glm::vec3(0.998914f, 1.407529f, 1.201679f);
-
     glm::mat4 model = glm::mat4(1.0f);
-
-    model = glm::translate(model, glm::vec3(0.9f, 1.407529f, 1.93f));
+    model = glm::translate(model, glm::vec3(0.8829111f, 1.4899719f, 1.9229131f));
     model = glm::scale(model, glm::vec3(0.01f));
 
     shader->set_mat4("model", model);
 
-    shader->set_vec3("lightColor", glm::vec3(1.0f, 0.9f, 0.7f));
     light_box->draw(shader);
 }
 
 void MainController::draw_wizard() {
+    if (!m_show_wizard) {
+        return;
+    }
+
     auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
     auto resources = engine::core::Controller::get<engine::resources::ResourcesController>();
-    auto gui_controller = engine::core::Controller::get<app::GUIController>();
-
     auto shader = resources->shader("advanced");
     auto wizard = resources->model("wizard");
 
@@ -219,12 +224,37 @@ void MainController::draw_wizard() {
     shader->set_vec3("camPos", graphics->camera()->Position);
     shader->set_vec3("spotLightPos", graphics->camera()->Position);
     shader->set_vec3("spotLightDir", graphics->camera()->Front);
+    shader->set_vec3("pointLightPos", m_point_light_position);
+    shader->set_vec3("pointLightDiffuse", point_light_diffuse_color());
     shader->set_float("spotInnerCutOff", glm::cos(glm::radians(12.5f)));
     shader->set_float("spotOuterCutOff", glm::cos(glm::radians(17.5f)));
-    shader->set_bool("spotLightEnabled", gui_controller->is_spotlight_enabled());
-    shader->set_vec3("spotLightDiffuse", gui_controller->spotlight_diffuse_color());
+    shader->set_bool("spotLightEnabled", is_spotlight_enabled());
+    shader->set_vec3("spotLightDiffuse", spotlight_diffuse_color());
+    graphics->bind_point_shadow_map(shader);
 
     wizard->draw(shader);
+}
+
+void MainController::draw_point_shadow_scene() {
+    auto resources = engine::core::Controller::get<engine::resources::ResourcesController>();
+    auto shader = resources->shader("engine-point-shadow");
+
+    shader->set_mat4("model", glm::mat4(1.0f));
+    resources->model("scary")->draw(shader);
+
+    glm::mat4 pillar_model(1.0f);
+    pillar_model = glm::translate(pillar_model, glm::vec3(1.0f, 0.05f, 1.2f));
+    pillar_model = glm::scale(pillar_model, glm::vec3(0.0002f));
+    shader->set_mat4("model", pillar_model);
+    resources->model("pillar")->draw(shader);
+
+    if (m_show_wizard) {
+        glm::mat4 wizard_model(1.0f);
+        wizard_model = glm::translate(wizard_model, glm::vec3(-2.0f, 1.0f, 1.1f));
+        wizard_model = glm::scale(wizard_model, glm::vec3(1.5f));
+        shader->set_mat4("model", wizard_model);
+        resources->model("wizard")->draw(shader);
+    }
 }
 
 void MainController::end_draw() {

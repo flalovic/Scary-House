@@ -8,6 +8,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "GUIControler.hpp"
+#include "MainController.hpp"
 
 namespace app {
     void GUIController::initialize() {
@@ -22,8 +23,9 @@ namespace app {
         }
     }
 
-    void GUIController::draw() {
+    void GUIController::render_gui() {
         auto graphics = engine::core::Controller::get<engine::graphics::GraphicsController>();
+        auto main_controller = engine::core::Controller::get<MainController>();
         auto camera = graphics->camera();
 
         graphics->begin_gui();
@@ -40,23 +42,43 @@ namespace app {
         ImGui::Separator();
         ImGui::Text("Spotlight Controls");
 
-        ImGui::Checkbox("Enable Spotlight", &m_spotlight_enabled);
+        bool spotlight_enabled = main_controller->is_spotlight_enabled();
+        if (ImGui::Checkbox("Enable Spotlight", &spotlight_enabled)) {
+            main_controller->set_spotlight_enabled(spotlight_enabled);
+        }
 
-        if (!m_spotlight_enabled) ImGui::BeginDisabled();
-        ImGui::ColorEdit3("Diffuse Color", glm::value_ptr(m_spotlight_diffuse));
-        if (!m_spotlight_enabled) ImGui::EndDisabled();
+        if (!spotlight_enabled) ImGui::BeginDisabled();
+        glm::vec3 spotlight_diffuse = main_controller->spotlight_diffuse_color();
+        if (ImGui::ColorEdit3("Diffuse Color", glm::value_ptr(spotlight_diffuse))) {
+            main_controller->set_spotlight_diffuse_color(spotlight_diffuse);
+        }
+        if (!spotlight_enabled) ImGui::EndDisabled();
+
+        glm::vec3 point_light_diffuse = main_controller->point_light_diffuse_color();
+        if (ImGui::ColorEdit3(
+                "Point Light Diffuse",
+                glm::value_ptr(point_light_diffuse),
+                ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR
+            )) {
+            main_controller->set_point_light_diffuse_color(point_light_diffuse);
+        }
 
         ImGui::Separator();
         ImGui::Text("Post-processing");
 
-        m_bloom_enabled = graphics->bloom_enabled();
-        if (ImGui::Checkbox("Enable Bloom", &m_bloom_enabled)) {
-            graphics->enable_bloom(m_bloom_enabled);
+        bool bloom_enabled = graphics->bloom_enabled();
+        if (ImGui::Checkbox("Enable Bloom", &bloom_enabled)) {
+            graphics->enable_bloom(bloom_enabled);
         }
 
-        ImGui::SliderFloat("Exposure", &m_exposure, 0.0f, 1.0f, "%.2f");
-        if (ImGui::IsItemEdited()) {
-            graphics->set_exposure(m_exposure);
+        bool point_shadows_enabled = graphics->point_shadows_enabled();
+        if (ImGui::Checkbox("Enable Point Shadows", &point_shadows_enabled)) {
+            graphics->enable_point_shadows(point_shadows_enabled);
+        }
+
+        float exposure = graphics->exposure();
+        if (ImGui::SliderFloat("Exposure", &exposure, 0.0f, 1.0f, "%.2f")) {
+            graphics->set_exposure(exposure);
         }
 
         ImGui::End();
