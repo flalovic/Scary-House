@@ -1,5 +1,6 @@
 {
   "resources": {
+    "engine_path": "../../resources",
     "models": {
       "backpack": {
         "path": "backpack/backpack.obj",

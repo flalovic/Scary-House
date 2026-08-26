@@ -1,5 +1,6 @@
 {
   "resources": {
+    "engine_path": "../engine/resources",
     "models": {
       "scary": {
         "path": "scary_interior/scene.gltf",
