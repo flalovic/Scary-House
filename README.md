@@ -1,22 +1,88 @@
-# matf-rg-project
+# Scary House
+
+**Filip Lalovic**
+
+Scary House is an interactive haunted-interior scene built with C++ and OpenGL on top of the custom MATF
+graphics engine. The scene combines first-person exploration, imported GLTF models, configurable lighting,
+HDR Bloom, omnidirectional point-light shadows, and a timed wizard appearance event.
+
+<p align="center">
+  <a href="https://drive.google.com/file/d/1-4d-uhnRe3TCJKG1FG71dBrJ97cZvoxD/view?usp=drive_link">
+    <img src="assets/scary-house-preview.png" alt="Scary House project preview" width="800">
+  </a>
+</p>
+
+<p align="center"><em>Click the preview to watch the full demonstration on Google Drive.</em></p>
+
+## Highlights
+
+- First-person camera movement through an imported haunted-house interior
+- Configurable spotlight and HDR point light
+- Bloom post-processing with adjustable exposure
+- Omnidirectional point shadows using a depth cubemap and 20-sample PCF
+- Timed wizard event triggered from the keyboard
+- Runtime GUI for lighting, Bloom, exposure, and shadow controls
+
+## Controls
+
+| Input | Action |
+| --- | --- |
+| `W` / `A` / `S` / `D` | Move the camera |
+| Mouse | Rotate the camera view |
+| Mouse wheel | Zoom in or out |
+| `F2` | Toggle the settings GUI and cursor |
+| `K` | Start the wizard appearance sequence |
+| `Esc` | Exit the application |
+
+## Models
+
+Model assets are not stored in Git because of their size. Download the following models and extract each one
+so that its `scene.gltf` file is located at the shown path:
+
+| Model | Source | Local path |
+| --- | --- | --- |
+| Scary interior | [Sketchfab](https://sketchfab.com/3d-models/scary-interior-fa7d60e783764ecfb15039bba6c05306) | `app/resources/models/scary_interior/scene.gltf` |
+| Pillar | [Sketchfab](https://sketchfab.com/3d-models/muqarnas-pillar-81f9be447fa14c66b7b384ca32953fc0) | `app/resources/models/pillar/scene.gltf` |
+| Magma ball | [Sketchfab](https://sketchfab.com/3d-models/projectile-magma-ball-915c10ddb81543eeaa122f7e159eccc5) | `app/resources/models/magma_ball/scene.gltf` |
+| Wizard | [Sketchfab](https://sketchfab.com/3d-models/dark-necromancer-corrupted-staff-skulls-10c3bef4113b4e128ad41c9fdcab74e3) | `app/resources/models/wizard/scene.gltf` |
+
+Keep the model's accompanying binary and texture files in the relative locations referenced by its GLTF file.
+
+## Build and run
+
+The project is configured for Linux. On Debian-based distributions, install the required dependencies with:
+
+```bash
+./setup.sh
+```
+
+Configure and build the application:
+
+```bash
+cmake -S . -B build
+cmake --build build --target APP
+```
+
+Run it from the `app` directory so that relative resource paths resolve correctly:
+
+```bash
+cd app
+./APP
+```
+
+## Project details
+
+The assignment-oriented feature checklist and asset attribution are available in
+[PROJECT-DESCRIPTION.md](PROJECT-DESCRIPTION.md).
+
+# Engine Documentation
 
 `matf-rg-project` is the base project for the Computer Graphics course at the Faculty of Mathematics,
 University of Belgrade for the school year of 2024/2025.
 
-# Setup
+## Generate documentation
 
-## Linux
-
-### Debian based (Ubuntu, Debian...)
-
-**To setup the necessary libraries, run:**  
-`./setup.sh`
-
-**To generate docs, run:**  
-`doxygen Doxyfile`   
-Open the documentation file in your browser: `docs/html/index.html`
-
-# Engine
+Run `doxygen Doxyfile`, then open `docs/html/index.html` in a browser.
 
 ## Main loop
 
