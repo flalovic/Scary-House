@@ -14,9 +14,13 @@ _deps
 /cmake-build-debug*
 /cmake-build-release*
 /.idea/
+/.vscode/
 *.a
 /docs/
 engine/test/app/test-app
 app/APP
+imgui.ini
 .venv
 engine/libs/glfw/src
+/app/resources/models/
+/engine/test/app/resources/models/

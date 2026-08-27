@@ -86,6 +86,23 @@ public:
     */
     void draw_skybox(const resources::Shader *shader, const resources::Skybox *skybox);
 
+    void enable_bloom(bool enabled);
+    bool bloom_enabled() const;
+
+    void set_exposure(float exposure);
+    float exposure() const;
+
+    void enable_point_shadows(bool enabled);
+    bool point_shadows_enabled() const;
+    void begin_point_shadow_pass(const glm::vec3 &light_position);
+    void end_point_shadow_pass();
+    void bind_point_shadow_map(const resources::Shader *shader) const;
+
+    void begin_render();
+    void end_render();
+
+    void resize_bloom_buffers(int width, int height);
+
     Camera *camera() {
         return &m_camera;
     }
@@ -167,6 +184,35 @@ private:
     glm::mat4 m_projection_matrix{};
     Camera m_camera{};
     ImGuiContext *m_imgui_context{};
+
+    void initialize_bloom();
+    void destroy_bloom();
+    void initialize_point_shadows();
+    void destroy_point_shadows();
+
+    void blur_pass();
+    void final_pass();
+
+    bool m_bloom_enabled = false;
+
+    float m_exposure = 1.0f;
+    float m_threshold = 1.0f;
+
+    unsigned int m_hdr_fbo = 0;
+    unsigned int m_hdr_color_buffers[2] = {0, 0};
+    unsigned int m_hdr_depth_rbo = 0;
+
+    unsigned int m_pingpong_fbo[2] = {0, 0};
+    unsigned int m_pingpong_color_buffers[2] = {0, 0};
+
+    static constexpr unsigned int POINT_SHADOW_SIZE = 1024;
+    static constexpr float POINT_SHADOW_NEAR_PLANE = 0.1f;
+    static constexpr float POINT_SHADOW_FAR_PLANE = 25.0f;
+
+    bool m_point_shadows_enabled = true;
+    int m_point_shadow_texture_unit = 0;
+    unsigned int m_point_shadow_fbo = 0;
+    unsigned int m_point_shadow_depth_cubemap = 0;
 };
 
 /**

@@ -1,11 +1,28 @@
 {
   "resources": {
+    "engine_path": "../engine/resources",
     "models": {
+      "scary": {
+        "path": "scary_interior/scene.gltf",
+        "flip_uvs": true
+      },
+      "pillar": {
+        "path": "pillar/scene.gltf",
+        "flip_uvs": true
+      },
+      "magma_ball": {
+        "path": "magma_ball/scene.gltf",
+        "flip_uvs": true
+      },
+      "wizard": {
+        "path": "wizard/scene.gltf",
+        "flip_uvs": true
+      }
     }
   },
   "window": {
     "height": 600,
-    "title": "Hello, window!",
+    "title": "Scary House",
     "width": 800
   }
 }

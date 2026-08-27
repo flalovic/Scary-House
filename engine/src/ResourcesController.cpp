@@ -9,6 +9,7 @@
 #include <spdlog/spdlog.h>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 namespace engine::resources {
 
@@ -126,7 +127,7 @@ Model *ResourcesController::model(const std::string &name) {
         }
         std::filesystem::path model_path = m_models_path / std::filesystem::path(config["resources"]["models"][name]["path"].get<std::string>());
         Assimp::Importer importer;
-        int flags = aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace;
+        int flags = aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_PreTransformVertices;
         if (config["resources"]["models"][name].value<bool>("flip_uvs", false)) {
             flags |= aiProcess_FlipUVs;
         }
@@ -168,8 +169,18 @@ Skybox *ResourcesController::skybox(const std::string &name, const std::filesyst
 Shader *ResourcesController::shader(const std::string &name, const std::filesystem::path &path) {
     auto &result = m_shaders[name];
     if (!result) {
-        spdlog::info("load_shader(path={})", path.string());
-        result = std::make_unique<Shader>(ShaderCompiler::compile_from_file(name, path));
+        std::filesystem::path shader_path = path;
+        if (shader_path.empty()) {
+            auto shaders_path = m_shaders_path;
+            if (name.starts_with("engine-")) {
+                const auto &config = util::Configuration::config();
+                shaders_path = std::filesystem::path(config["resources"]["engine_path"].get<std::string>()) / "shaders";
+            }
+            shader_path = shaders_path / (name + ".glsl");
+        }
+
+        spdlog::info("load_shader(path={})", shader_path.string());
+        result = std::make_unique<Shader>(ShaderCompiler::compile_from_file(name, shader_path));
     }
     return result.get();
 }
